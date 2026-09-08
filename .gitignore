@@ -1,0 +1,25 @@
+# Build & Compiled files
+target/
+**/target/
+dist/
+**/dist/
+*.class
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+.eslintcache
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# IDEs & System files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
