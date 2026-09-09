@@ -8,6 +8,7 @@ import com.telereceipt.model.UserProfile;
 import com.telereceipt.repository.ExpenseRepository;
 import com.telereceipt.repository.UserProfileRepository;
 import com.telereceipt.service.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/telegram")
 public class TelegramWebhookController {
+
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     private final TelegramService telegramService;
     private final TextExpenseParser textExpenseParser;
@@ -199,7 +203,7 @@ public class TelegramWebhookController {
             );
 
             String token = authTokenService.generateToken(userId);
-            String dashboardUrl = "http://localhost:5173/?token=" + token;
+            String dashboardUrl = frontendUrl + "/?token=" + token;
             String fullStatusMsg = statusMsg + String.format("\n👉 <a href=\"%s\"><b>Open Web Dashboard</b></a>", dashboardUrl);
             telegramService.sendMessage(chatId, fullStatusMsg);
             return;
@@ -208,7 +212,7 @@ public class TelegramWebhookController {
         // 6. Handle /web command (Magic link login)
         if (text != null && text.startsWith("/web")) {
             String token = authTokenService.generateToken(userId);
-            String dashboardUrl = "http://localhost:5173/?token=" + token;
+            String dashboardUrl = frontendUrl + "/?token=" + token;
             String webMsg = String.format("""
                 🔐 <b>Your Private Web Dashboard</b>
 
