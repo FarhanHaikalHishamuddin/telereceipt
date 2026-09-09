@@ -43,10 +43,39 @@ export default function App() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [bypassedLogin, setBypassedLogin] = useState(false);
-  const [view, setView] = useState(() => {
+  const getViewFromPath = () => {
+    const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
-    return (urlParams.get('token') || getAuthToken()) ? 'dashboard' : 'home';
-  });
+    if (path === '/dashboard' || urlParams.get('token') || getAuthToken()) {
+      return 'dashboard';
+    }
+    if (path === '/login') {
+      return 'login';
+    }
+    return 'home';
+  };
+
+  const [view, setView] = useState(getViewFromPath);
+
+  const navigate = useCallback((newView) => {
+    setView(newView);
+    const targetPath = newView === 'dashboard' ? '/dashboard' : newView === 'login' ? '/login' : '/';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/dashboard') setView('dashboard');
+      else if (path === '/login') setView('login');
+      else setView('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     document.documentElement.classList.remove('dark');
     localStorage.removeItem('theme');
@@ -134,25 +163,31 @@ export default function App() {
   if (view === 'home') {
     return (
       <HomePage 
-        onGoToDashboard={() => setView('dashboard')}
+        onGoToDashboard={() => {
+          if (token || bypassedLogin) {
+            navigate('dashboard');
+          } else {
+            navigate('login');
+          }
+        }}
         hasSession={!!(token || bypassedLogin)}
       />
     );
   }
 
-  // 2. If no token present and not in local dev bypass, show login prompt
-  if (!token && !bypassedLogin) {
+  // 2. If on login view or unauthenticated, show login prompt
+  if (view === 'login' || (!token && !bypassedLogin)) {
     return (
       <LoginPrompt 
         onLoginSuccess={(newToken) => {
           setToken(newToken);
-          setView('dashboard');
+          navigate('dashboard');
         }} 
         onContinueLocal={() => {
           setBypassedLogin(true);
-          setView('dashboard');
+          navigate('dashboard');
         }} 
-        onBackToHome={() => setView('home')}
+        onBackToHome={() => navigate('home')}
       />
     );
   }
@@ -164,12 +199,12 @@ export default function App() {
         loading={loading} 
         onLogout={() => {
           handleLogout();
-          setView('home');
+          navigate('home');
         }} 
         onOpenAddExpense={() => setIsAddExpenseOpen(true)}
         selectedYear={selectedYear}
         selectedMonth={selectedMonth}
-        onGoHome={() => setView('home')}
+        onGoHome={() => navigate('home')}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
